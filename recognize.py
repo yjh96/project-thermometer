@@ -17,19 +17,22 @@ def detect(frame):
 
 def display(frame,faces):
     print(faces)
-    try:
-        for (x,y,w,h) in faces:
-            
-            center = (x + w//2, y + h//2)
-            frame = cv.ellipse(frame, center, (w//2, h//2), 0, 0, 360, (255, 0, 255), 4)
-            
-            # faceROI = frame_gray[y:y+h,x:x+w]
-            # cv.imshow('ROI',faceROI)
-            
-        cv.imshow('Capture - Face detection', frame)
-    except:
-        pass
 
+    for i in range(1,8):
+            frame = cv.line(frame,(0,(40*i)),(320,(40*i)),(255,255,255))
+            frame = cv.line(frame,((40*i),0),((40*i),320),(255,255,255))
+    
+    for (x,y,w,h) in faces:  
+        # center = (x + w//2, y + h//2)
+        p1 = (x,y)
+        p2 = (x+w,y+h)
+        # frame = cv.ellipse(frame, center, (w//2, h//2), 0, 0, 360, (255, 0, 255), 4)
+        frame = cv.rectangle(frame,p1,p2,(255,255,255),thickness=2)
+        # faceROI = frame_gray[y:y+h,x:x+w]
+        # cv.imshow('ROI',faceROI)
+        
+    cv.imshow('Capture - Face detection', frame)
+    
 def sampling (faces):
     for (x,y,w,h) in faces:
         target = (round((x + w/2)/40), round((y + h/2)/40))
