@@ -3,85 +3,105 @@ import cv2 as cv
 import numpy as np
 
 def detect(frame):
+    
+    data = []
+
     frame_gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
     frame_gray = cv.equalizeHist(frame_gray) 
     faces = face_cascade.detectMultiScale(frame_gray)
     print(len(faces),' face detected')
 
-    return faces
+    # 인식된 얼굴 위치에서 마스크를 검출하기 위한 부분 선택
+    for (x,y,w,h) in faces:
+        
+        #관심부분을 선택
+        maskROI = frame_gray[y+(h*2//3):y+h,x:x+w]
+        # cv.imshow('mask',maskROI)
+        
+        # 입을 인식해 마스크 착용 여부 확인 ( 1 = 착용,  0 = 미착용 )
+        mask = mouth_cascade.detectMultiScale(maskROI)
+        print(type(mask))
+        if type(mask) is tuple:
+            mask = 1
+        else:
+            mask = 0
+        data.append([x,y,w,h,mask])
+        print(mask)
 
-def display(frame,data):
+    # cv.imshow('mouth',frame)    
 
-    for i in range(1,8):
-            frame = cv.line(frame,(0,(40*i)),(320,(40*i)),(255,255,255))
-            frame = cv.line(frame,((40*i),0),((40*i),320),(255,255,255))
-    
-    for (x,y,w,h,thermo_data) in data:  
-        
-        forehead_1 = (int(x + w//3),int(y + 0))
-        
-        forehead_2 = (int(x + 2*(w//3)), int(y + 1*(h//3)))
-        
-        frame = cv.rectangle(frame,forehead_1,forehead_2,(0,0,255),thickness=2)
-        
-        # forehead_11 = (x + 5*(w//12), y + 1*(h//12))
-        # forehead_21 = (x + 7*(w//12), y + 3*(h//12))
-        # frame = cv.rectangle(frame,forehead_11,forehead_21,(0,255,0),thickness=2)
-        
-        p1 = (int(x),int(y))
-        p2 = (int(x+w),int(y+h))
-        frame = cv.rectangle(frame,p1,p2,(255,255,255),thickness=2)
+    data = np.array(data)
 
-        frame = cv.putText(frame,str(thermo_data),p1,0,1,(255,255,255),thickness=2)
+    return data
 
-        
-        
 
-        
-     
-    cv.imshow('Capture - Face detection', frame)
 
 #def collectiROI(frame):
     # gathering ROI Data ( identify face )
     # faceROI = frame_gray[y:y+h,x:x+w]
     # cv.imshow('ROI',faceROI)
          
-def targeting (faces):
-    target = []
-    print(faces)
-    for(x,y,w,h) in faces:
-        print('[',x,y,w,h,']')
-        target_tmp = [round((x+ w//2)/40), round((y + h//6)/40)]
-        print('origin data')
-        print('x : ',x + w//2,' | y : ',y + h//6)
-        print('scaled data')
-        print('x : ',target_tmp[0],' | y : ',target_tmp[1])
-        target.append([x,y,w,h,target_tmp[0],target_tmp[1]])
 
-    print(target)
-    target = np.array(target)
-    print(target)
-
-    return target
-
-
-def get_thermo(target,thermo_data):
+def get_data(faces,thermo_data):
+    
     data = []
-    for (x,y,w,h,x1,x2) in target:
-        thermo = thermo_data[int(x1-1)][int(x2-1)]     
-        data.append([x,y,w,h,thermo])
+
+    for(x,y,w,h,mask) in faces:
+        # 이마 위치를 target으로 설정
+        target = [round((x+ w//2)/40), round((y + h//6)/40)]
+        thermo = thermo_data[int(target[0]-1)][int(target[1]-1)]
+        data.append([x,y,w,h,mask,thermo])
     
     data = np.array(data)
-    print(data)
+    
     return data
 
 
+
+
+def display(frame,data):
+
+    #  8*8 격자
+    for i in range(1,8):
+            frame = cv.line(frame,(0,(40*i)),(320,(40*i)),(255,255,255))
+            frame = cv.line(frame,((40*i),0),((40*i),320),(255,255,255))
+    
+    for (x,y,w,h,mask,thermo) in data:  
+        
+        # 이마 위치 표시
+        # forehead_1 = (int(x + w//3),int(y + 0))
+        # forehead_2 = (int(x + 2*(w//3)), int(y + 1*(h//3))) 
+        # frame = cv.rectangle(frame,forehead_1,forehead_2,(0,0,255),thickness=2)
+
+        p1 = (int(x),int(y))
+        p2 = (int(x+w),int(y+h))
+
+        print(mask)
+
+        if mask == 0 :
+            frame = cv.rectangle(frame,p1,p2,(0,0,255),thickness=3)
+
+
+            frame = cv.putText(frame,'No Mask',p1,0,1,(255,255,255),thickness=2)
+
+        else :
+            frame = cv.rectangle(frame,p1,p2,(255,255,255),thickness=2)
+
+
+            frame = cv.putText(frame,str(thermo),p1,0,1,(255,255,255),thickness=2)
+        
+    cv.imshow('Capture - Face detection', frame)
+
 face_cascade = cv.CascadeClassifier()
+mouth_cascade = cv.CascadeClassifier()
 
 if not face_cascade.load(cv.samples.findFile('./face.xml')):
-    print("error - face weight")
+    print("Error - face data not found")
     exit(-2)
 
+if not mouth_cascade.load(cv.samples.findFile('./mouth.xml')):
+    print("Error - mouth data not found")
+    exit(-2)
 
 cap = cv.VideoCapture(-1)
 cap.set(3, 320)
@@ -102,12 +122,11 @@ while True:
         break
 
     # get information
-    faces = detect(frame)
-    target = targeting(faces)
-    data = get_thermo(target,thermo_data)  
+    faces = detect(frame) 
+    data = get_data(faces,thermo_data)
     
 
-    # display realtime video
+    # display realtime video & information
     display(frame,data)
 
     ## imshow 필수
