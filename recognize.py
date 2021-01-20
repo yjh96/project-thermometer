@@ -2,11 +2,6 @@ from __future__ import print_function
 import cv2 as cv
 import numpy as np
 
-# import face_recognition as fr
-
-
-
-
 camsize = 320
 scale = int(camsize/8)
 DB= []
@@ -23,46 +18,35 @@ def detect(frame):
 
     # 인식된 얼굴 위치에서 마스크를 검출하기 위한 부분 선택
     for (x,y,w,h) in faces:
-        
-        #관심부분을 선택
+           
+        #마스크 착용여부 판단을 위한 관심부분 선택
         maskROI = frame_gray[y+(h*2//3):y+h,x:x+w]
-        # cv.imshow('mask',maskROI)
         
         # 입을 인식해 마스크 착용 여부 확인 ( 1 = 착용,  0 = 미착용 )
-        mask = mouth_cascade.detectMultiScale(maskROI)
+        mask = mouth_cascade.detectMultiScale(maskROI,scaleFactor=2,minNeighbors = 3)
         if type(mask) is tuple:
             mask = 1
         else:
             mask = 0
 
+
+
         data.append([x,y,w,h,mask])
-        
-        # 얼굴 인식 -- 성능문제로 제외
-        # 관심부분 선택
-        # faceROI = frame_gray[y:y+h,x:x+w]
-        # faceROI = cv.cvtColor(faceROI,cv.COLOR_BGR2RGB)
-        # loc = fr.face_locations(faceROI)
-        # encodes = fr.face_encodings(faceROI,loc)
 
-        # for encode in encodes:
-        #     match = fr.compare_faces(DB,encode)
-        #     name = 'idk'
-
-        #     print(name)
-
-        #     data.append([x,y,w,h,mask])
-            
     data = np.array(data)
 
-    return data
+    return data, frame
 
 
+# def collectFace(frame,data):
+#     for(x,y,w,h,mask) in data:
+#         number = np.where(data==x)[0][0]
 
-#def collectiROI(frame):
-    # gathering ROI Data ( identify face )
-    # faceROI = frame_gray[y:y+h,x:x+w]
-    # cv.imshow('ROI',faceROI)
-         
+#         faceROI = frame[y:y+h,x:x+w]
+#         faceROI = cv.cvtColor(faceROI,cv.COLOR_BGR2GRAY)
+#         faceROI = cv.equalizeHist(faceROI)
+#         cv.imwrite("/home/pi/Desktop/test/haar_cascade/Data/userface"+str(number)+"_"+str(x)+".jpg",faceROI )
+
 
 def get_data(faces,thermo_data):
     
@@ -94,30 +78,31 @@ def display(frame,data):
     for (x,y,w,h,mask,thermo) in data:  
     # for (x,y,w,h,mask,name,thermo) in data:  
         
-        # 이마 위치 표시
-        # forehead_1 = (int(x + w//3),int(y + 0))
-        # forehead_2 = (int(x + 2*(w//3)), int(y + 1*(h//3))) 
-        # frame = cv.rectangle(frame,forehead_1,forehead_2,(0,0,255),thickness=2)
-
-        p1 = (int(x),int(y))
+        
+        p1 = (int(x),int(y-15))
         p2 = (int(x+w),int(y+h))
-        p3 = (int(x),int(y+h))
+        p3 = (int(x),int(y+h+25))
+        p4 = (int(x+60),int(y+h+25))
 
         
 
         if mask == 0 :
             frame = cv.rectangle(frame,p1,p2,(0,0,255),thickness=3)
+            frame = cv.rectangle(frame,p3,p4,(0,0,0),thickness=-1)
             frame = cv.putText(frame,'No Mask',p1,0,1,(255,255,255),thickness=2)
+            frame = cv.putText(frame,str(thermo),p3,0,1,(255,255,255),thickness=2)
             # frame = cv.putText(frame,str(name),p2,0,1,(255,255,255),thickness=2)
-
+            
         else:
             frame = cv.rectangle(frame,p1,p2,(255,255,255),thickness=2)
             frame = cv.putText(frame,str(thermo),p3,0,1,(255,255,255),thickness=2)
             # frame = cv.putText(frame,str(name),p2,0,1,(255,255,255),thickness=2)
-            if (float(thermo) >= 37.5 or float(thermo) <= 35.5) :
-                frame = cv.putText(frame,"!!Need Check!!",p1,0,1,(0,0,255),thickness=2)
-        
+            # if (float(thermo) >= 37.5 or float(thermo) <= 35.5) :
+            #     frame = cv.putText(frame,"!!Need Check!!",p1,0,1,(0,0,255),thickness=2)
+                  
     cv.imshow('Capture - Face detection', frame)
+    cv.moveWindow('Capture - Face detection',0,0)
+    
 
 
 
@@ -126,11 +111,11 @@ def display(frame,data):
 face_cascade = cv.CascadeClassifier()
 mouth_cascade = cv.CascadeClassifier()
 
-if not face_cascade.load(cv.samples.findFile('./face.xml')):
+if not face_cascade.load(cv.samples.findFile('/home/pi/Desktop/test/haar_cascade/face.xml')):
     print("Error - face data not found")
     exit(-2)
 
-if not mouth_cascade.load(cv.samples.findFile('./mouth.xml')):
+if not mouth_cascade.load(cv.samples.findFile('/home/pi/Desktop/test/haar_cascade/mouth.xml')):
     print("Error - mouth data not found")
     exit(-2)
 
@@ -163,8 +148,9 @@ while True:
         break
 
     # get information
-    faces = detect(frame) 
+    faces, frame_gray = detect(frame) 
     data = get_data(faces,thermo_data)
+    # collectFace(frame,faces)
     
 
     # display realtime video & information
