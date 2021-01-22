@@ -11,10 +11,10 @@ Software
 > Opencv - 4.5.0  
 > Opencv_contrib - 4.5.0  
 > Python - 3.7.3  
-> adafruit-circuitpython-amg88xx - 1.2.5
+> adafruit-circuitpython-amg88xx - 1.2.5  
 > numpy - 1.16.2
 
--   프로그램 개요
+-   프로그램 실행 절차
 
     ```
     1. Camera를 통한 얼굴 인식 [ Opencv - haar cascade]
@@ -22,7 +22,6 @@ Software
     3. 얼굴 위치의 [i,j] 와 대응되는 Sensor값 읽기
     4. 마스크 착용 여부 표시
     5. 35.5℃ 미만, 37.5℃ 초과 시 추가 안내 알림 표시
-
     ```
 
 -   개발 기록
@@ -65,6 +64,9 @@ Software
     - AMG8833 센서와 I2C를 활용해 pixel의 정보를 가져오도록 코드 작성
     -  카메라 좌표와 센서 픽셀 정보가 일치하는지 확인
 
+    2021-01-22
+    - 마스크 착용 후 온도 이상시 적색 테두리 적용
+    - 미사용 좌표 삭제
     ```
 
 -   문제점
@@ -73,7 +75,18 @@ Software
     - 실시간 인식을 위해서는 해상도를 포기해야 함 (320*320)
     --> 먼 거리에서는 마스크 착용 여부를 구분하지 못함 (해상도와 연관)
     - 사진 수집 알고리즘의 구현이 필요함 ( 여러 사람이 들어오는 경우 사진수집시 뒤섞이는 문제가 발생함 )
-    - 열화상 센서와 거리가 멀수록 온도가 낮게 측정되는 문제 발생 ( 센서의 한계 )
+    - 열화상 센서와 거리가 멀수록 온도가 낮게 측정되는 문제 발생 ( Datasheet 상 7m까지 사용이 가능하다고 표기되어 있음 )
     ```
 
 -   Reference
+
+    > <a href="https://opencv.org">OpenCV</a>  
+    > <a href="https://numpy.org/">Numpy</a>  
+    > <a href="https://github.com/adafruit/dafruit_CircuitPython_AMG88xx">Adafruit-AMG88xx</a>
+
+-   Package
+
+```
+# Adafruit-AMG88xx
+$sudo pip3 install adafruit-circuitpython-amg88xx
+```

@@ -53,6 +53,7 @@ def detect(frame):
 
 # # 영상 중 인식된 얼굴부분을 jpg로 저장함.
 # def collect_face(frame,data):
+# 
 #     for(x,y,w,h,mask) in data:
 #         number = np.where(data==x)[0][0]
 #         # 관심부분 설정
@@ -90,7 +91,6 @@ def i2c_thermo(thermo):
     data.reverse()
     return data
 
-
 # 화면 출력
 def display(frame,data):
 
@@ -126,48 +126,39 @@ def display(frame,data):
         p1 = (int(x),int(y))
         p2 = (int(x+w),int(y+h))
         p3 = (int(x),int(y+h+40))
-        p4 = (int(x+80),int(y+h+5))
-        p5 = (0,0) 
-        p6 = (320,40)
+        p4 = (0,0) 
+        p5 = (320,40)
         
-        
-
-
         if mask == 0 :
             frame = cv.rectangle(frame,p1,p2,red,thickness=3)
-            frame = cv.rectangle(frame,p5,p6,black,thickness=-1)
+            frame = cv.rectangle(frame,p4,p5,black,thickness=-1)
             frame = cv.putText(frame,mask_alert,(int((camsize-mask_alert_len[0][0])/2),int(mask_alert_len[0][1])),0,1,red,thickness=2)
             frame = cv.putText(frame,str(thermo),p3,0,1,white,thickness=2)
             
         else:
-            frame = cv.rectangle(frame,p1,p2,white,thickness=2)
-            frame = cv.rectangle(frame,p5,p6,black,thickness=-1)
-            frame = cv.putText(frame,thermo_pass,(int((camsize-thermo_pass_len[0][0])/2),int(thermo_pass_len[0][1])),0,1,green,thickness=2)
             frame = cv.putText(frame,str(thermo),p3,0,1,white,thickness=2)
-            
             # 이상온도 구분 [ 정상온도 범위 35.6 ~ 37.4 ]
-        if (float(thermo) >= 37.5 or float(thermo) <= 35.5) :
-                frame = cv.rectangle(frame,p5,p6,black,thickness=-1)
+            if (float(thermo) >= 37.5 or float(thermo) <= 35.5) :
+                frame = cv.rectangle(frame,p1,p2,red,thickness=3)
+                frame = cv.rectangle(frame,p4,p5,black,thickness=-1)
                 frame = cv.putText(frame,thermo_alert,(int((camsize-thermo_alert_len[0][0])/2),int(thermo_alert_len[0][1])),0,1,red,thickness=2)
-                  
-
+            # 마스크 착용, 정상온도 범위
+            else:
+                frame = cv.rectangle(frame,p1,p2,white,thickness=2)
+                frame = cv.rectangle(frame,p4,p5,black,thickness=-1)
+                frame = cv.putText(frame,thermo_pass,(int((camsize-thermo_pass_len[0][0])/2),int(thermo_pass_len[0][1])),0,1,green,thickness=2)
+       
     cv.imshow('display', frame)
     cv.moveWindow('display',0,0)
     
-    
-
-
-
-
-
 face_cascade = cv.CascadeClassifier()
 mouth_cascade = cv.CascadeClassifier()
 
-if not face_cascade.load(cv.samples.findFile('./face.xml')):
+if not face_cascade.load(cv.samples.findFile('xml/face.xml')):
     print("Error - face data not found")
     exit(-2)
 
-if not mouth_cascade.load(cv.samples.findFile('./mouth.xml')):
+if not mouth_cascade.load(cv.samples.findFile('xml/mouth.xml')):
     print("Error - mouth data not found")
     exit(-2)
 
@@ -177,27 +168,6 @@ cap = cv.VideoCapture(-1)
 cap.set(3, camsize)
 cap.set(4, camsize)
 cap.set(5, 30)
-
-# dummy coordinate
-# thermo_data = [[1.1,1.2,1.3,1.4,1.5,1.6,1.7,1.8],
-# [2.1,2.2,2.3,2.4,2.5,2.6,2.7,2.8],
-# [3.1,3.2,3.3,3.4,3.5,3.6,3.7,3.8],
-# [4.1,4.2,4.3,4.4,4.5,4.6,4.7,4.8],
-# [5.1,5.2,5.3,5.4,5.5,5.6,5.7,5.8],
-# [6.1,6.2,6.3,6.4,6.5,6.6,6.7,6.8],
-# [7.1,7.2,7.3,7.4,7.5,7.6,7.7,7.8],
-# [8.1,8.2,8.3,8.4,8.5,8.6,8.7,8.8]]
-
-# dummy thermo data
-# thermo_data = [[37.7,34.7,34,34.1,37.8,37.2,36.3,37.4],
-# [36.5,36.5,36.5,36.5,36.5,36.5,36.5,36.5],
-# [36.5,36.5,36.5,36.5,36.5,36.5,36.5,36.5],
-# [36.5,36.5,36.5,36.5,36.5,36.5,36.5,36.5],
-# [37.9,37.9,37.9,37.9,37.9,37.9,37.9,37.9],
-# [37.9,37.9,37.9,37.9,37.9,37.9,37.9,37.9],
-# [37.9,37.9,37.9,37.9,37.9,37.9,37.9,37.9],
-# [34.4,34.5,36.4,35,37.8,34.5,36.5,37.7]
-# ]
 
 if not cap.isOpened:
     print("error - camera")
@@ -214,7 +184,6 @@ while True:
     faces = detect(frame)
     thermo_data = i2c_thermo(thermo)    
     data = get_data(faces,thermo_data)
-
     # collect_face(frame,faces)
     
     # 실시간 영상송출 및 정보 표시
